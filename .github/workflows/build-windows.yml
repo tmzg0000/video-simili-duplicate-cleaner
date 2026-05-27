@@ -1,6 +1,5 @@
 name: Build Windows App
 
-# 设置触发条件：支持手动触发和推送到 master 分支时触发
 on:
   workflow_dispatch: 
   push:
@@ -11,7 +10,6 @@ on:
 
 jobs:
   build:
-    # 强制使用包含 VS 2022 的最新 Windows 运行环境
     runs-on: windows-latest
 
     steps:
@@ -20,24 +18,36 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 1. 配置 Qt 环境 (GitHub Actions 默认无 Qt)
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
         with:
-          node-version: '20'
+          version: '6.5.3' # 使用稳定的 Qt6 版本
+          arch: 'win64_msvc2019_64' # MSVC 2019 的预编译包完全兼容 VS 2022
 
-      - name: Install NPM dependencies
-        run: npm install
+      # 2. 配置 vcpkg 并启用强缓存 (极其重要！)
+      # 这一步能大幅加速后续编译，避免每次都从头编译 FFmpeg 和 OpenCV
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
 
-      # 这一步是耗时大头，CMake 会调用 vcpkg 下载并编译 OpenCV 和 FFmpeg
-      - name: Build Windows Executable
-        run: npm run build-win
+      # 3. 运行 CMake 配置，显式指定 vcpkg 作为工具链
+      - name: Configure CMake
+        run: >
+          cmake -B build -S . 
+          -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" 
+          -DCMAKE_BUILD_TYPE=Release
 
-      # 将编译好的产物打包上传，供你下载
+      # 4. 执行正式编译
+      - name: Build executable
+        run: cmake --build build --config Release
+
+      # 5. 打包生成的 exe 产物
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Video-Simili-Duplicate-Cleaner-Windows
-          # 根据 CMake 默认输出路径，通常在 build/Release 目录下
           path: |
             build/Release/*.exe
             build/Release/*.dll
