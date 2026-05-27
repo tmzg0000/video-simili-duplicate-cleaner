@@ -1,0 +1,44 @@
+name: Build Windows App
+
+# 设置触发条件：支持手动触发和推送到 master 分支时触发
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  build:
+    # 强制使用包含 VS 2022 的最新 Windows 运行环境
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install NPM dependencies
+        run: npm install
+
+      # 这一步是耗时大头，CMake 会调用 vcpkg 下载并编译 OpenCV 和 FFmpeg
+      - name: Build Windows Executable
+        run: npm run build-win
+
+      # 将编译好的产物打包上传，供你下载
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Video-Simili-Duplicate-Cleaner-Windows
+          # 根据 CMake 默认输出路径，通常在 build/Release 目录下
+          path: |
+            build/Release/*.exe
+            build/Release/*.dll
+          if-no-files-found: warn
