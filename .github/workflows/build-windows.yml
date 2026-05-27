@@ -32,10 +32,10 @@ jobs:
         with:
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
 
-      # 3. 运行 CMake 配置，显式指定 vcpkg 作为工具链
+# 3. 运行 CMake 配置，显式指定源码目录为 QtProject
       - name: Configure CMake
         run: >
-          cmake -B build -S . 
+          cmake -B build -S QtProject 
           -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" 
           -DCMAKE_BUILD_TYPE=Release
 
