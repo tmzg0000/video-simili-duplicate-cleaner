@@ -1,10 +1,8 @@
 {
-  "builtin-baseline": "96fd599859beaed2ae891a2b2982746f28611b07",
   "dependencies": [
     {
       "name": "opencv4",
-      "default-features": false,
-      "version>=": "4.11.0"
+      "default-features": false
     },
     {
       "name": "ffmpeg",
@@ -14,31 +12,15 @@
         "swresample",
         "swscale",
         "aom"
-      ],
-      "version>=": "7.1.1"
+      ]
     },
     {
       "name": "qtbase",
-      "version>=": "6.9.1",
       "features": [
         "widgets",
         "sql-sqlite",
         "concurrent"
       ]
-    }
-  ],
-  "overrides": [
-    { 
-        "name": "ffmpeg", 
-        "version": "7.1.2"
-    },
-    {
-        "name": "opencv4",
-        "version": "4.11.0"
-    },
-    {
-        "name": "qtbase",
-        "version": "6.9.1"
     }
   ]
 }
