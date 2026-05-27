@@ -1,5 +1,5 @@
 {
-  "builtin-baseline": "5e5d0e1cd7785623065e77eff011afdeec1a3575",
+  "builtin-baseline": "96fd599859beaed2ae891a2b2982746f28611b07",
   "dependencies": [
     {
       "name": "opencv4",
