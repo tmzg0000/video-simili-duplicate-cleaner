@@ -15,7 +15,7 @@
         "swscale",
         "aom"
       ],
-      "version>=": "7.1.2"
+      "version>=": "7.1.1"
     },
     {
       "name": "qtbase",
