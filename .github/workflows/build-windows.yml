@@ -18,36 +18,35 @@ jobs:
         with:
           submodules: recursive
 
-      # 1. 配置 Qt 环境 (GitHub Actions 默认无 Qt)
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.5.3' # 使用稳定的 Qt6 版本
-          arch: 'win64_msvc2019_64' # MSVC 2019 的预编译包完全兼容 VS 2022
-
-      # 2. 配置 vcpkg 并启用强缓存 (极其重要！)
-      # 这一步能大幅加速后续编译，避免每次都从头编译 FFmpeg 和 OpenCV
+      # 1. 启动 vcpkg，利用缓存避免重新编译
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
 
-# 3. 运行 CMake 配置，显式指定源码目录为 QtProject
+      # 2. 运行 CMake 配置
       - name: Configure CMake
         run: >
           cmake -B build -S QtProject 
           -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" 
           -DCMAKE_BUILD_TYPE=Release
 
-# 4. 执行正式编译
+      # 3. 执行正式编译
       - name: Build executable
         run: cmake --build build --config Release
 
-      # 5. [新增] 运行 windeployqt 自动收集 Qt 依赖和插件文件夹
-      - name: Deploy Qt dependencies
-        run: windeployqt --release build/Release/video-simili-duplicate-cleaner.exe
+      # 4. [终极绝杀] 暴力拷贝 vcpkg 编译出的所有 DLL 和 Qt 插件
+      - name: Deploy all dependencies manually
+        run: |
+          cd build
+          
+          # 拷贝所有的核心 DLL (包含 FFmpeg, OpenCV, Qt6Core 等)
+          Copy-Item -Path "vcpkg_installed\x64-windows\bin\*.dll" -Destination "Release\" -Force
+          
+          # 拷贝所有的 Qt 插件目录 (包含 platforms\qwindows.dll, imageformats 等) 到 Release 目录下
+          Copy-Item -Path "vcpkg_installed\x64-windows\plugins\*" -Destination "Release\" -Recurse -Force
 
-      # 6. [修改] 打包整个 Release 文件夹（包含 platforms 等子目录）
+      # 5. 打包整个文件夹
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
