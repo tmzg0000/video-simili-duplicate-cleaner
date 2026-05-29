@@ -35,16 +35,25 @@ jobs:
       - name: Build executable
         run: cmake --build build --config Release
 
-      # 4. [终极绝杀] 暴力拷贝 vcpkg 编译出的所有 DLL 和 Qt 插件
-      - name: Deploy all dependencies manually
+      # 4. [终极修复版] 智能拷贝与部署依赖
+      - name: Deploy all dependencies
         run: |
           cd build
           
-          # 拷贝所有的核心 DLL (包含 FFmpeg, OpenCV, Qt6Core 等)
-          Copy-Item -Path "vcpkg_installed\x64-windows\bin\*.dll" -Destination "Release\" -Force
+          # 第一步：暴力提取 vcpkg 编译的所有基础 DLL (包含缺失的 FFmpeg 和 OpenCV)
+          if (Test-Path "vcpkg_installed\x64-windows\bin") {
+              Write-Host "Copying core DLLs..."
+              Copy-Item -Path "vcpkg_installed\x64-windows\bin\*.dll" -Destination "Release\" -Force
+          }
           
-          # 拷贝所有的 Qt 插件目录 (包含 platforms\qwindows.dll, imageformats 等) 到 Release 目录下
-          Copy-Item -Path "vcpkg_installed\x64-windows\plugins\*" -Destination "Release\" -Recurse -Force
+          # 第二步：在系统里搜寻 vcpkg 自己编译的纯正版 windeployqt.exe，并用它来提取 Qt 插件
+          $windeployqt = Get-ChildItem -Path "vcpkg_installed" -Filter "windeployqt.exe" -Recurse | Select-Object -First 1
+          if ($windeployqt) {
+              Write-Host "找到纯正血统的 windeployqt: $($windeployqt.FullName)"
+              & $windeployqt.FullName --release --compiler-runtime --dir Release Release\video-simili-duplicate-cleaner.exe
+          } else {
+              Write-Host "Warning: 找不到 windeployqt.exe"
+          }
 
       # 5. 打包整个文件夹
       - name: Upload Build Artifact
